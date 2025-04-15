@@ -13,10 +13,47 @@ const ScannerPage = () => {
   const { addScannedProduct, lastScannedProduct, setLastScannedProduct } = useAppContext();
   const [isScanning, setIsScanning] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [suggestions, setSuggestions] = useState('');
   const navigate = useNavigate();
   
   const handleStartScanning = () => {
     setIsScanning(true);
+  };
+
+  const fetchRecommendations = async (product) => {
+    try {
+      const response = await fetch("http://localhost:5678/webhook/assistant", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          "user_id": "user_123", // À remplacer par l'ID réel de l'utilisateur
+          "request_type": "text_query",
+          "content": {
+            "text": `Je viens de scanner ${product.name}, que peux-tu me suggérer ?`,
+            "context": {
+              "location": "scanner_page",
+              "scanned_products": [
+                {
+                  "id": product.id,
+                  "name": product.name,
+                  "category": product.category || "Non catégorisé"
+                }
+              ]
+            }
+          }
+        }),
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setSuggestions(data.recommendations || "Aucune suggestion disponible pour le moment.");
+        toast.success("Recommandations mises à jour");
+      }
+    } catch (error) {
+      console.error("Erreur lors de la récupération des recommandations:", error);
+    }
   };
 
   const handleDetected = async (barcode: string) => {
@@ -35,6 +72,9 @@ const ScannerPage = () => {
         
         addScannedProduct(product);
         toast.success(`Produit scanné: ${product.name}`);
+        
+        // Récupérer des recommandations depuis l'API n8n
+        fetchRecommendations(product);
       } else {
         toast.error("Produit non trouvé");
       }
@@ -103,6 +143,15 @@ const ScannerPage = () => {
           <div className="mb-6 animate-fade-in">
             <h2 className="text-lg font-semibold mb-2">Dernier produit scanné</h2>
             <ScannedProductCard product={lastScannedProduct} />
+          </div>
+        )}
+        
+        {suggestions && (
+          <div className="mb-6 animate-fade-in">
+            <h2 className="text-lg font-semibold mb-2">Recommandations</h2>
+            <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
+              <p className="text-sm text-blue-800">{suggestions}</p>
+            </div>
           </div>
         )}
         
