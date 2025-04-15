@@ -23,6 +23,9 @@ export interface Recipe {
   duration?: number; // en minutes
   difficulty?: 'facile' | 'moyen' | 'difficile';
   instructions: string[];
+  tags?: string[];
+  totalCost?: number;
+  costPerServing?: number;
 }
 
 export interface CartItem {

@@ -1,114 +1,88 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { Recipe } from '../types';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Clock, ChefHat, ArrowRight } from 'lucide-react';
+import { fetchRecommendedRecipes } from '../services/recipeService';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Loader } from 'lucide-react';
+import FilterTags from '../components/FilterTags';
+import RecipeCard from '../components/RecipeCard';
+import { toast } from 'sonner';
 
-// Données fictives pour simuler des recettes suggérées
-const mockRecipes: Recipe[] = [
-  {
-    id: '1',
-    name: 'Pasta Carbonara',
-    imageUrl: 'https://images.unsplash.com/photo-1612874742237-6526221588e3?auto=format&fit=crop&q=80&w=300',
-    ingredients: [
-      { id: '2', name: 'Pâtes complètes' },
-      { id: '3', name: 'Œufs' },
-      { id: '4', name: 'Parmesan' },
-      { id: '5', name: 'Lardons' }
-    ],
-    duration: 20,
-    difficulty: 'facile',
-    instructions: [
-      'Faire cuire les pâtes al dente.',
-      'Dans un bol, battre les œufs avec le parmesan râpé.',
-      'Faire revenir les lardons à sec.',
-      'Égoutter les pâtes et les mélanger hors du feu avec les œufs et les lardons.'
-    ]
-  },
-  {
-    id: '2',
-    name: 'Salade de quinoa aux légumes grillés',
-    imageUrl: 'https://images.unsplash.com/photo-1505576399279-565b52d4ac71?auto=format&fit=crop&q=80&w=300',
-    ingredients: [
-      { id: '6', name: 'Quinoa' },
-      { id: '7', name: 'Courgette' },
-      { id: '8', name: 'Poivron' },
-      { id: '9', name: 'Feta' }
-    ],
-    duration: 25,
-    difficulty: 'moyen',
-    instructions: [
-      'Cuire le quinoa selon les instructions du paquet.',
-      'Couper les légumes et les faire griller.',
-      'Mélanger le quinoa et les légumes grillés.',
-      'Ajouter la feta émiettée et un filet d\'huile d\'olive.'
-    ]
-  }
-];
+const SuggestionsPage: React.FC = () => {
+  const { scannedProducts, fridgeItems, suggestedRecipes, setSuggestedRecipes } = useAppContext();
+  const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [displayedRecipe, setDisplayedRecipe] = useState<Recipe | null>(null);
 
-const SuggestionsPage = () => {
-  const { scannedProducts, fridgeItems } = useAppContext();
-  
-  // Dans une version réelle, on utiliserait les produits scannés et les produits du frigo
-  // pour obtenir des recettes pertinentes via une API
-  
+  useEffect(() => {
+    const loadRecipes = async () => {
+      setIsLoading(true);
+      try {
+        const recipes = await fetchRecommendedRecipes(scannedProducts, selectedFilters);
+        setSuggestedRecipes(recipes);
+      } catch (error) {
+        console.error('Erreur lors de la récupération des recettes :', error);
+        toast.error('Impossible de charger les recettes');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadRecipes();
+  }, [scannedProducts, selectedFilters, setSuggestedRecipes]);
+
+  const handleFilterChange = (filters: string[]) => {
+    setSelectedFilters(filters);
+  };
+
+  const handleShowDetails = (recipe: Recipe) => {
+    setDisplayedRecipe(recipe);
+    toast.info(`Affichage des détails de ${recipe.name}`);
+    // Dans une version plus complète, on naviguerait vers une page de détails
+  };
+
   return (
-    <div className="p-6 animate-fade-in">
-      <h1 className="text-2xl font-bold mb-4">Suggestions de recettes</h1>
-      
-      {scannedProducts.length > 0 || fridgeItems.length > 0 ? (
-        <p className="text-sm text-gray-600 mb-6">
-          Basées sur {scannedProducts.length} produits scannés et {fridgeItems.length} produits dans votre frigo
+    <div className="p-6 pb-20 animate-fade-in">
+      <div className="mb-4">
+        <h1 className="text-2xl font-bold">Suggestions de recettes</h1>
+        
+        <p className="text-sm text-gray-600 mt-1">
+          Basées sur {scannedProducts.length} produit{scannedProducts.length > 1 ? 's' : ''} scanné{scannedProducts.length > 1 ? 's' : ''} et {fridgeItems.length} produit{fridgeItems.length > 1 ? 's' : ''} dans votre frigo
         </p>
-      ) : (
-        <p className="text-sm text-gray-600 mb-6">
-          Scannez des produits ou ajoutez-les à votre frigo pour obtenir des suggestions personnalisées
-        </p>
-      )}
-      
-      <div className="grid gap-6">
-        {mockRecipes.map(recipe => (
-          <Card key={recipe.id} className="overflow-hidden">
-            <div className="flex">
-              {recipe.imageUrl && (
-                <div className="w-1/3 h-32 bg-cover bg-center" style={{ backgroundImage: `url(${recipe.imageUrl})` }} />
-              )}
-              <div className="w-2/3">
-                <CardHeader className="p-3">
-                  <CardTitle className="text-lg">{recipe.name}</CardTitle>
-                </CardHeader>
-                <CardContent className="p-3 pt-0">
-                  <div className="flex items-center text-sm text-gray-600 gap-4">
-                    <div className="flex items-center">
-                      <Clock size={16} className="mr-1" />
-                      {recipe.duration} min
-                    </div>
-                    <div className="flex items-center">
-                      <ChefHat size={16} className="mr-1" />
-                      {recipe.difficulty}
-                    </div>
-                  </div>
-                  <p className="text-sm mt-2">
-                    {recipe.ingredients.slice(0, 2).map(i => i.name).join(', ')}
-                    {recipe.ingredients.length > 2 ? ` et ${recipe.ingredients.length - 2} autres` : ''}
-                  </p>
-                </CardContent>
-                <CardFooter className="p-3 pt-0">
-                  <div className="text-primary flex items-center text-sm">
-                    Voir la recette <ArrowRight size={16} className="ml-1" />
-                  </div>
-                </CardFooter>
-              </div>
-            </div>
-          </Card>
-        ))}
       </div>
       
-      {mockRecipes.length === 0 && (
-        <div className="text-center py-12">
-          <p className="text-gray-500">Aucune suggestion pour le moment</p>
+      <FilterTags 
+        selectedFilters={selectedFilters} 
+        onChange={handleFilterChange} 
+      />
+      
+      {isLoading ? (
+        <div className="flex flex-col items-center justify-center py-12">
+          <Loader size={32} className="text-primary animate-spin mb-4" />
+          <p className="text-gray-500">Recherche des meilleures recettes...</p>
         </div>
+      ) : (
+        <ScrollArea className="h-[calc(100vh-230px)] pr-4">
+          {suggestedRecipes.length > 0 ? (
+            suggestedRecipes.map(recipe => (
+              <RecipeCard 
+                key={recipe.id} 
+                recipe={recipe} 
+                onShowDetails={handleShowDetails} 
+              />
+            ))
+          ) : (
+            <div className="text-center py-12">
+              <p className="text-gray-500 mb-2">Aucune recette ne correspond à vos critères</p>
+              {selectedFilters.length > 0 && (
+                <p className="text-sm text-gray-400">
+                  Essayez de modifier vos filtres ou de scanner d'autres produits
+                </p>
+              )}
+            </div>
+          )}
+        </ScrollArea>
       )}
     </div>
   );

@@ -17,6 +17,8 @@ interface AppContextType {
   addToFridge: (product: Product, quantity?: number, expiryDate?: Date) => void;
   removeFromFridge: (productId: string) => void;
   updateFridgeItemQuantity: (productId: string, quantity: number) => void;
+  setSuggestedRecipes: (recipes: Recipe[]) => void;
+  addRecipeToCart: (recipe: Recipe) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -107,6 +109,15 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       )
     );
   };
+  
+  const addRecipeToCart = (recipe: Recipe) => {
+    // Ajouter tous les ingrédients de la recette au panier
+    recipe.ingredients.forEach(ingredient => {
+      addToCart(ingredient, 1);
+    });
+    
+    toast.success(`Tous les ingrédients de ${recipe.name} ont été ajoutés au panier`);
+  };
 
   const value = {
     scannedProducts,
@@ -122,6 +133,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     addToFridge,
     removeFromFridge,
     updateFridgeItemQuantity,
+    setSuggestedRecipes,
+    addRecipeToCart,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

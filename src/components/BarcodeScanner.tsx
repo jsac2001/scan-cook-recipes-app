@@ -4,125 +4,124 @@ import Quagga from 'quagga';
 import { ScanResult } from '../types';
 
 interface BarcodeScannerProps {
-  onDetected: (code: string) => void;
+  onDetected: (barcode: string) => void;
   isScanning: boolean;
 }
 
-const BarcodeScanner = ({ onDetected, isScanning }: BarcodeScannerProps) => {
-  const scannerRef = useRef<HTMLDivElement>(null);
-  const [cameraError, setCameraError] = useState<string | null>(null);
+const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onDetected, isScanning }) => {
+  const videoRef = useRef<HTMLDivElement>(null);
+  const [scanningLine, setScanningLine] = useState<number>(25);
+  const scannerHeight = 300; // hauteur fixe du scanner
 
+  // Animation de la ligne de scan
   useEffect(() => {
-    if (!isScanning) {
-      Quagga.stop();
-      return;
-    }
-
-    if (scannerRef.current) {
-      const initQuagga = async () => {
-        try {
-          await Quagga.init({
-            inputStream: {
-              name: 'Live',
-              type: 'LiveStream',
-              target: scannerRef.current!,
-              constraints: {
-                facingMode: 'environment', // Utiliser la caméra arrière
-                width: { min: 450 },
-                height: { min: 300 },
-                aspectRatio: { min: 1, max: 2 }
-              },
-            },
-            locator: {
-              patchSize: 'medium',
-              halfSample: true
-            },
-            numOfWorkers: navigator.hardwareConcurrency || 4,
-            frequency: 10,
-            decoder: {
-              readers: ['ean_reader', 'ean_8_reader', 'code_128_reader']
-            },
-            locate: true
-          });
-
-          Quagga.start();
-          setCameraError(null);
-        } catch (error) {
-          console.error('Erreur d\'initialisation de la caméra:', error);
-          setCameraError('Impossible d\'accéder à la caméra. Veuillez vérifier les autorisations.');
-        }
-      };
-
-      // Gestionnaire d'événement pour la détection de code-barres
-      Quagga.onDetected((result: ScanResult) => {
-        if (result.codeResult.code) {
-          // Vibration si disponible
-          if (navigator.vibrate) {
-            navigator.vibrate(100);
-          }
-          
-          onDetected(result.codeResult.code);
-          
-          // Arrêter brièvement le scanner pour éviter les scans multiples
-          Quagga.stop();
-          setTimeout(() => {
-            if (isScanning && scannerRef.current) {
-              Quagga.start();
-            }
-          }, 1500);
-        }
-      });
-
-      initQuagga();
-
-      // Nettoyer lors du démontage du composant
-      return () => {
-        Quagga.offDetected();
-        Quagga.stop();
-      };
-    }
-  }, [onDetected, isScanning]);
-
-  return (
-    <div className="relative overflow-hidden rounded-lg bg-black">
-      {cameraError ? (
-        <div className="flex items-center justify-center h-full min-h-[300px] bg-gray-900 text-white p-4 text-center">
-          <p>{cameraError}</p>
-        </div>
-      ) : (
-        <>
-          <div 
-            ref={scannerRef} 
-            className="w-full aspect-[4/3] overflow-hidden"
-          >
-            {/* Le flux vidéo sera injecté ici par Quagga */}
-          </div>
-          <div className="scan-line"></div>
-        </>
-      )}
-      <style jsx>{`
-        .scan-line {
-          position: absolute;
-          width: 100%;
-          height: 2px;
-          background-color: rgba(59, 130, 246, 0.7);
-          top: 50%;
-          animation: scan 2s linear infinite;
-          box-shadow: 0 0 8px rgba(59, 130, 246, 0.8);
+    if (isScanning) {
+      let direction = 1;
+      let position = 25;
+      
+      const animationInterval = setInterval(() => {
+        position += 3 * direction;
+        
+        if (position >= 75) {
+          direction = -1;
+        } else if (position <= 25) {
+          direction = 1;
         }
         
-        @keyframes scan {
-          0% {
-            top: 20%;
-          }
-          50% {
-            top: 80%;
-          }
-          100% {
-            top: 20%;
-          }
+        setScanningLine(position);
+      }, 50);
+      
+      return () => clearInterval(animationInterval);
+    }
+  }, [isScanning]);
+
+  useEffect(() => {
+    if (!isScanning || !videoRef.current) return;
+
+    // Configuration de Quagga
+    Quagga.init({
+      inputStream: {
+        name: "Live",
+        type: "LiveStream",
+        target: videoRef.current,
+        constraints: {
+          width: { min: 300 },
+          height: { min: 300 },
+          facingMode: "environment", // utiliser la caméra arrière
+          aspectRatio: { min: 1, max: 2 }
+        },
+      },
+      locator: {
+        patchSize: "medium",
+        halfSample: true
+      },
+      numOfWorkers: 2,
+      frequency: 10,
+      decoder: {
+        readers: ["ean_reader", "ean_8_reader", "code_128_reader"]
+      },
+      locate: true
+    }, (err) => {
+      if (err) {
+        console.error("Erreur d'initialisation de Quagga:", err);
+        return;
+      }
+      
+      // Démarrer Quagga
+      Quagga.start();
+      
+      // Configuration de la détection de code-barres
+      Quagga.onDetected((data: ScanResult) => {
+        // Arrêter Quagga après la détection
+        Quagga.stop();
+        
+        // Appeler le callback avec le code-barres détecté
+        if (data && data.codeResult) {
+          onDetected(data.codeResult.code);
         }
-      `}</style>
+      });
+    });
+
+    // Nettoyage lors du démontage du composant
+    return () => {
+      Quagga.stop();
+    };
+  }, [isScanning, onDetected]);
+
+  return (
+    <div className="w-full relative overflow-hidden">
+      <div 
+        ref={videoRef} 
+        className="w-full rounded-lg overflow-hidden"
+        style={{ height: `${scannerHeight}px` }}
+      />
+      
+      {isScanning && (
+        <>
+          {/* Cadre de viseur */}
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="border-2 border-primary w-4/5 h-2/3 rounded-lg"></div>
+          </div>
+          
+          {/* Ligne de scan */}
+          <div 
+            className="absolute left-0 right-0 h-0.5 bg-primary/50 pointer-events-none"
+            style={{ top: `${scanningLine}%`, boxShadow: '0 0 8px rgba(59, 130, 246, 0.8)' }}
+          />
+        </>
+      )}
+      
+      <style>
+        {`
+          .drawingBuffer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+          }
+        `}
+      </style>
     </div>
   );
 };
