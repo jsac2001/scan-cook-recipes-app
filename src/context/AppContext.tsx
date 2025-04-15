@@ -5,10 +5,12 @@ import { toast } from "sonner";
 
 interface AppContextType {
   scannedProducts: Product[];
+  lastScannedProduct: Product | null;
   cartItems: CartItem[];
   fridgeItems: FridgeItem[];
   suggestedRecipes: Recipe[];
   addScannedProduct: (product: Product) => void;
+  setLastScannedProduct: (product: Product) => void;
   addToCart: (product: Product, quantity?: number) => void;
   removeFromCart: (productId: string) => void;
   updateCartItemQuantity: (productId: string, quantity: number) => void;
@@ -29,6 +31,7 @@ export const useAppContext = () => {
 
 export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [scannedProducts, setScannedProducts] = useState<Product[]>([]);
+  const [lastScannedProduct, setLastScannedProduct] = useState<Product | null>(null);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [fridgeItems, setFridgeItems] = useState<FridgeItem[]>([]);
   const [suggestedRecipes, setSuggestedRecipes] = useState<Recipe[]>([]);
@@ -38,6 +41,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     if (!scannedProducts.some(p => p.id === product.id)) {
       setScannedProducts([...scannedProducts, product]);
       toast.success(`${product.name} a été scanné`);
+      
+      // Définir comme dernier produit scanné
+      setLastScannedProduct(product);
       
       // Dans une version réelle, on pourrait appeler une API pour obtenir des recettes suggérées
       // basées sur les produits scannés
@@ -104,10 +110,12 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   const value = {
     scannedProducts,
+    lastScannedProduct,
     cartItems,
     fridgeItems,
     suggestedRecipes,
     addScannedProduct,
+    setLastScannedProduct,
     addToCart,
     removeFromCart,
     updateCartItemQuantity,

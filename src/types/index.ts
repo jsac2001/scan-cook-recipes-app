@@ -12,6 +12,7 @@ export interface Product {
     carbs?: number;
     fat?: number;
   };
+  price?: number;
 }
 
 export interface Recipe {
@@ -33,4 +34,11 @@ export interface FridgeItem {
   product: Product;
   quantity: number;
   expiryDate?: Date;
+}
+
+export interface ScanResult {
+  codeResult: {
+    code: string;
+    format: string;
+  };
 }

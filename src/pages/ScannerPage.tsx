@@ -1,90 +1,123 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
-import { Product } from '../types';
 import { Button } from '@/components/ui/button';
-import { Camera, Zap } from 'lucide-react';
-
-// Données fictives pour simuler un scan
-const mockProducts: Product[] = [
-  {
-    id: '1',
-    name: 'Lait demi-écrémé',
-    brand: 'Lactel',
-    barcode: '3256540000080',
-    category: 'Produits laitiers',
-    imageUrl: 'https://images.unsplash.com/photo-1564466809058-bf4114d55352?auto=format&fit=crop&q=80&w=300'
-  },
-  {
-    id: '2',
-    name: 'Pâtes complètes',
-    brand: 'Panzani',
-    barcode: '3038350208705',
-    category: 'Féculents',
-    imageUrl: 'https://images.unsplash.com/photo-1603729362753-f8162ac6c3df?auto=format&fit=crop&q=80&w=300'
-  }
-];
+import { Camera, Zap, Eye, ArrowRight } from 'lucide-react';
+import BarcodeScanner from '../components/BarcodeScanner';
+import ScannedProductCard from '../components/ScannedProductCard';
+import { fetchProductByBarcode } from '../services/productService';
+import { toast } from 'sonner';
 
 const ScannerPage = () => {
-  const { addScannedProduct } = useAppContext();
-  const [scanning, setScanning] = useState(false);
+  const { addScannedProduct, lastScannedProduct, setLastScannedProduct } = useAppContext();
+  const [isScanning, setIsScanning] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
   
-  const startScanning = () => {
-    setScanning(true);
+  const handleStartScanning = () => {
+    setIsScanning(true);
+  };
+
+  const handleDetected = async (barcode: string) => {
+    setIsScanning(false);
+    setIsLoading(true);
     
-    // Simulation d'un scan après 2 secondes
-    setTimeout(() => {
-      const randomProduct = mockProducts[Math.floor(Math.random() * mockProducts.length)];
-      addScannedProduct(randomProduct);
-      setScanning(false);
-    }, 2000);
+    try {
+      // Appel au service qui simule une API
+      const product = await fetchProductByBarcode(barcode);
+      
+      if (product) {
+        // Vibration de confirmation
+        if (navigator.vibrate) {
+          navigator.vibrate([100, 50, 100]);
+        }
+        
+        addScannedProduct(product);
+        toast.success(`Produit scanné: ${product.name}`);
+      } else {
+        toast.error("Produit non trouvé");
+      }
+    } catch (error) {
+      console.error("Erreur lors de la récupération du produit:", error);
+      toast.error("Erreur lors du scan");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const goToSuggestions = () => {
+    navigate('/suggestions');
   };
 
   return (
-    <div className="flex flex-col items-center justify-between p-6 h-full animate-fade-in">
+    <div className="flex flex-col p-6 pb-20 h-full animate-fade-in">
       <div className="w-full text-center mb-6">
-        <h1 className="text-2xl font-bold mb-2">Scanner un produit</h1>
-        <p className="text-gray-600">
+        <h1 className="text-2xl font-bold mb-1">Scanner un produit</h1>
+        <p className="text-gray-600 text-sm">
           Positionnez le code-barres dans le cadre pour scanner un produit
         </p>
       </div>
       
-      <div className="flex-1 w-full flex flex-col items-center justify-center">
-        <div className="relative w-full max-w-sm aspect-square border-2 border-dashed border-primary rounded-lg mb-8 flex items-center justify-center bg-gray-50">
-          {scanning ? (
-            <>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-full h-0.5 bg-primary animate-pulse"></div>
-                <div className="h-full w-0.5 bg-primary animate-pulse"></div>
-              </div>
-              <p className="text-lg font-semibold">Scanning...</p>
-            </>
+      <div className="flex-1 flex flex-col">
+        <div className="w-full mb-6">
+          {isScanning ? (
+            <div className="relative rounded-lg overflow-hidden shadow-lg">
+              <BarcodeScanner 
+                onDetected={handleDetected}
+                isScanning={isScanning}
+              />
+              
+              <Button 
+                variant="outline" 
+                className="absolute top-4 right-4 bg-white/70 backdrop-blur-sm"
+                onClick={() => setIsScanning(false)}
+              >
+                Annuler
+              </Button>
+            </div>
           ) : (
-            <Camera size={80} className="text-gray-400" />
+            <div className="relative w-full aspect-video border-2 border-dashed border-primary rounded-lg mb-8 flex items-center justify-center bg-gray-50">
+              <div className="text-center p-4">
+                {isLoading ? (
+                  <>
+                    <div className="w-12 h-12 border-t-4 border-primary border-solid rounded-full animate-spin mx-auto mb-2"></div>
+                    <p className="text-gray-500">Recherche du produit...</p>
+                  </>
+                ) : (
+                  <>
+                    <Camera size={60} className="text-gray-400 mx-auto mb-4" />
+                    <p className="text-lg font-medium mb-2">Prêt à scanner</p>
+                    <p className="text-sm text-gray-500 mb-4">Activez la caméra pour commencer</p>
+                    <Button onClick={handleStartScanning} className="mx-auto gap-2">
+                      <Eye /> Activer la caméra
+                    </Button>
+                  </>
+                )}
+              </div>
+            </div>
           )}
         </div>
         
-        <Button 
-          onClick={startScanning} 
-          disabled={scanning}
-          className="flex items-center gap-2 px-8 py-6 text-lg"
-        >
-          {scanning ? (
-            <>
-              <Zap className="animate-pulse" /> Analyse en cours...
-            </>
-          ) : (
-            <>
-              <Camera /> Scanner un produit
-            </>
-          )}
-        </Button>
-      </div>
-      
-      <div className="w-full mt-6">
-        <p className="text-sm text-gray-500 text-center">
-          Vous pouvez également rechercher un produit manuellement
-        </p>
+        {lastScannedProduct && (
+          <div className="mb-6 animate-fade-in">
+            <h2 className="text-lg font-semibold mb-2">Dernier produit scanné</h2>
+            <ScannedProductCard product={lastScannedProduct} />
+          </div>
+        )}
+        
+        <div className="mt-auto">
+          <Button
+            onClick={goToSuggestions}
+            className="w-full py-6 text-lg gap-2"
+            disabled={!lastScannedProduct}
+          >
+            Voir les suggestions <ArrowRight size={18} />
+          </Button>
+          <p className="text-center text-xs text-gray-500 mt-2">
+            Basé sur {lastScannedProduct ? '1' : '0'} produit scanné
+          </p>
+        </div>
       </div>
     </div>
   );
