@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Clock, ChefHat, Tag, ShoppingCart, ArrowRight } from 'lucide-react';
@@ -8,14 +9,23 @@ import { useAppContext } from '../context/AppContext';
 
 interface RecipeCardProps {
   recipe: Recipe;
-  onShowDetails: (recipe: Recipe) => void;
+  onShowDetails?: (recipe: Recipe) => void;
 }
 
 const RecipeCard: React.FC<RecipeCardProps> = ({ recipe, onShowDetails }) => {
+  const navigate = useNavigate();
   const { addRecipeToCart } = useAppContext();
   
   const handleAddToCart = () => {
     addRecipeToCart(recipe);
+  };
+  
+  const handleShowDetails = () => {
+    if (onShowDetails) {
+      onShowDetails(recipe);
+    }
+    // Rediriger vers la page de détail de la recette
+    navigate(`/recipe/${recipe.id}`);
   };
   
   return (
@@ -90,7 +100,7 @@ const RecipeCard: React.FC<RecipeCardProps> = ({ recipe, onShowDetails }) => {
             <Button 
               variant="outline" 
               className="flex-1" 
-              onClick={() => onShowDetails(recipe)}
+              onClick={handleShowDetails}
             >
               <ArrowRight size={16} className="mr-2" /> Détails
             </Button>

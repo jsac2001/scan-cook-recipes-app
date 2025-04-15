@@ -134,3 +134,17 @@ export const fetchRecommendedRecipes = async (
   return filteredRecipes;
 };
 
+// Nouvelle fonction pour récupérer une recette par ID
+export const fetchRecipeById = async (id: string): Promise<Recipe | null> => {
+  // Simuler un délai réseau
+  await delay(800);
+  
+  // Rechercher la recette par ID
+  const recipe = mockRecipes.find(recipe => recipe.id === id);
+  
+  if (recipe) {
+    return recipe;
+  }
+  
+  return null;
+};
