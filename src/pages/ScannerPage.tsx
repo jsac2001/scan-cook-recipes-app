@@ -20,43 +20,46 @@ const ScannerPage = () => {
     setIsScanning(true);
   };
 
-  const fetchRecommendations = async (product) => {
+  // Nouvelle fonction pour envoyer les données de code-barres à l'API n8n
+  const sendBarcodeData = async (barcode, productName = "Produit inconnu") => {
+    const payload = {
+      user_id: "test_user_123",
+      request_type: "barcode_scan",
+      content: {
+        text: `Je viens de scanner un produit avec le code-barres ${barcode}, que peux-tu me suggérer ?`,
+        barcode: barcode,
+        context: {
+          location: "scanner_page",
+          scanned_products: [
+            {
+              id: `scan_${Date.now()}`,
+              name: productName,
+              category: "Non catégorisé",
+              barcode: barcode
+            }
+          ]
+        }
+      }
+    };
+    
     try {
-      // URL mise à jour pour les tests avec n8n
       const response = await fetch("http://localhost:5678/webhook-test/assistant", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          "user_id": "test_user_123", // ID utilisateur de test standardisé
-          "request_type": "text_query",
-          "content": {
-            "text": `Je viens de scanner ${product.name}, que peux-tu me suggérer ?`,
-            "context": {
-              "location": "scanner_page",
-              "scanned_products": [
-                {
-                  "id": `scan_${Date.now()}`, // ID unique pour le scan
-                  "name": product.name,
-                  "category": product.category || "Non catégorisé"
-                }
-              ]
-            }
-          }
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
       });
       
       if (response.ok) {
         const data = await response.json();
-        setSuggestions(data.recommendations || "Aucune suggestion disponible pour le moment.");
-        toast.success("Recommandations mises à jour");
+        return data;
       } else {
         toast.error(`Erreur API: ${response.status}`);
+        return null;
       }
     } catch (error) {
-      console.error("Erreur lors de la récupération des recommandations:", error);
+      console.error("Erreur lors de l'envoi du code-barres:", error);
       toast.error("Impossible de contacter le serveur de recommandations");
+      return null;
     }
   };
 
@@ -77,8 +80,12 @@ const ScannerPage = () => {
         addScannedProduct(product);
         toast.success(`Produit scanné: ${product.name}`);
         
-        // Récupérer des recommandations depuis l'API n8n
-        fetchRecommendations(product);
+        // Envoyer les données du code-barres à l'API n8n
+        const apiResponse = await sendBarcodeData(barcode, product.name);
+        if (apiResponse && apiResponse.recommendations) {
+          setSuggestions(apiResponse.recommendations);
+          toast.success("Recommandations mises à jour");
+        }
       } else {
         toast.error("Produit non trouvé");
       }

@@ -14,7 +14,8 @@ import {
   X, 
   Upload, 
   PlusCircle,
-  ArrowRight
+  ArrowRight,
+  Check
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Product } from '../types';
@@ -26,6 +27,8 @@ const FridgePage = () => {
     return localStorage.getItem('fridgeVisited') !== 'true';
   });
   const [isCapturing, setIsCapturing] = useState(false);
+  const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [newProduct, setNewProduct] = useState<{name: string, quantity: number, expiryDate?: string}>({
@@ -70,6 +73,7 @@ const FridgePage = () => {
       
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
+        await videoRef.current.play();
         setIsCapturing(true);
       }
     } catch (error) {
@@ -92,45 +96,111 @@ const FridgePage = () => {
     if (videoRef.current && canvasRef.current) {
       const context = canvasRef.current.getContext('2d');
       if (context) {
+        // Définir la taille du canvas à celle du flux vidéo
         canvasRef.current.width = videoRef.current.videoWidth;
         canvasRef.current.height = videoRef.current.videoHeight;
+        
+        // Dessiner l'image vidéo sur le canvas
         context.drawImage(videoRef.current, 0, 0, canvasRef.current.width, canvasRef.current.height);
         
         // Convertir l'image en base64
         const imageData = canvasRef.current.toDataURL('image/jpeg');
+        setCapturedImage(imageData);
+        
+        // Ouvrir la prévisualisation
+        setIsPreviewOpen(true);
         
         // Arrêter la caméra
         stopCamera();
-        
-        // Simuler l'envoi à une API et la reconnaissance
-        processImage(imageData);
       }
     }
   };
   
-  const processImage = (imageData: string) => {
+  const sendFridgeImage = async (imageBase64: string) => {
     setIsProcessing(true);
     
-    // Simuler l'appel API avec un délai
-    setTimeout(() => {
-      // Produits fictifs qui seraient normalement retournés par l'API
-      const detectedProducts = [
-        { id: `p${Date.now()}-1`, name: 'Lait', brand: 'Lactel', category: 'Produits laitiers', price: 1.15 },
-        { id: `p${Date.now()}-2`, name: 'Œufs', brand: 'Fermiers', category: 'Produits frais', price: 2.50 },
-        { id: `p${Date.now()}-3`, name: 'Tomates', brand: 'Local', category: 'Légumes', price: 1.80 }
-      ];
-      
-      // Ajouter les produits au frigo
-      detectedProducts.forEach(product => {
-        addToFridge(product);
+    // Extraire uniquement la partie base64 sans le préfixe "data:image/jpeg;base64,"
+    const base64Data = imageBase64.split(',')[1];
+    
+    const payload = {
+      user_id: "test_user_123",
+      request_type: "image_analysis",
+      content: {
+        text: "Voici une photo de mon frigo, identifie les produits qu'il contient",
+        image: base64Data,
+        context: {
+          location: "fridge_page",
+          first_time: isFirstTime
+        }
+      }
+    };
+    
+    try {
+      const response = await fetch("http://localhost:5678/webhook-test/assistant", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
       });
       
+      if (response.ok) {
+        const data = await response.json();
+        
+        // Ajouter les produits détectés au frigo
+        if (data.detected_products && Array.isArray(data.detected_products)) {
+          data.detected_products.forEach((product: any) => {
+            const fridgeProduct: Product = {
+              id: `detected-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+              name: product.name,
+              category: product.category || 'Non catégorisé',
+              price: product.price || 0
+            };
+            
+            addToFridge(fridgeProduct, product.quantity || 1);
+          });
+          
+          toast.success(`${data.detected_products.length} produits ajoutés à votre frigo`);
+        } else {
+          // Simuler des produits détectés pour les tests
+          simulateDetectedProducts();
+        }
+        
+        // Marquer comme non-première utilisation
+        setIsFirstTime(false);
+      } else {
+        toast.error(`Erreur API: ${response.status}`);
+        // Simuler des produits détectés pour les tests
+        simulateDetectedProducts();
+      }
+    } catch (error) {
+      console.error("Erreur lors de l'envoi de l'image:", error);
+      toast.error("Impossible de contacter le serveur");
+      // Simuler des produits détectés pour les tests
+      simulateDetectedProducts();
+    } finally {
       setIsProcessing(false);
-      toast.success(`${detectedProducts.length} produits ajoutés à votre frigo`);
-      
-      // Marquer comme non-première utilisation
-      setIsFirstTime(false);
-    }, 2000);
+      setIsPreviewOpen(false);
+      setCapturedImage(null);
+    }
+  };
+  
+  // Fonction pour simuler des produits détectés (pour les tests)
+  const simulateDetectedProducts = () => {
+    // Produits fictifs qui seraient normalement retournés par l'API
+    const detectedProducts = [
+      { id: `p${Date.now()}-1`, name: 'Lait', brand: 'Lactel', category: 'Produits laitiers', price: 1.15 },
+      { id: `p${Date.now()}-2`, name: 'Œufs', brand: 'Fermiers', category: 'Produits frais', price: 2.50 },
+      { id: `p${Date.now()}-3`, name: 'Tomates', brand: 'Local', category: 'Légumes', price: 1.80 }
+    ];
+    
+    // Ajouter les produits au frigo
+    detectedProducts.forEach(product => {
+      addToFridge(product);
+    });
+    
+    toast.success(`${detectedProducts.length} produits ajoutés à votre frigo`);
+    
+    // Marquer comme non-première utilisation
+    setIsFirstTime(false);
   };
   
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
@@ -142,7 +212,9 @@ const FridgePage = () => {
       
       reader.onload = (event) => {
         if (event.target?.result) {
-          processImage(event.target.result.toString());
+          const imageData = event.target.result.toString();
+          setCapturedImage(imageData);
+          setIsPreviewOpen(true);
         }
       };
       
@@ -161,7 +233,9 @@ const FridgePage = () => {
       
       reader.onload = (event) => {
         if (event.target?.result) {
-          processImage(event.target.result.toString());
+          const imageData = event.target.result.toString();
+          setCapturedImage(imageData);
+          setIsPreviewOpen(true);
         }
       };
       
@@ -225,6 +299,8 @@ const FridgePage = () => {
                 <video 
                   ref={videoRef} 
                   autoPlay 
+                  playsInline
+                  muted
                   className="w-full h-64 object-cover rounded-lg"
                 />
                 <div className="flex gap-2 mt-2">
@@ -421,6 +497,40 @@ const FridgePage = () => {
               <Plus size={18} className="mr-2" /> Ajouter
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Nouvelle modal pour prévisualiser l'image capturée */}
+      <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Prévisualisation de l'image</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col items-center space-y-4">
+            {capturedImage && (
+              <img 
+                src={capturedImage} 
+                alt="Prévisualisation" 
+                className="rounded-lg max-h-80 object-contain"
+              />
+            )}
+            <div className="flex space-x-4 w-full">
+              <Button variant="outline" onClick={() => {
+                setCapturedImage(null);
+                setIsPreviewOpen(false);
+              }} className="flex-1">
+                <X size={18} className="mr-2" /> Annuler
+              </Button>
+              <Button onClick={() => capturedImage && sendFridgeImage(capturedImage)} className="flex-1" disabled={isProcessing}>
+                {isProcessing ? (
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                ) : (
+                  <Check size={18} className="mr-2" />
+                )}
+                {isProcessing ? 'Traitement...' : 'Confirmer'}
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
