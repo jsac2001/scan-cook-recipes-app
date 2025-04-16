@@ -22,13 +22,14 @@ const ScannerPage = () => {
 
   const fetchRecommendations = async (product) => {
     try {
-      const response = await fetch("http://localhost:5678/webhook/assistant", {
+      // URL mise à jour pour les tests avec n8n
+      const response = await fetch("http://localhost:5678/webhook-test/assistant", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          "user_id": "user_123", // À remplacer par l'ID réel de l'utilisateur
+          "user_id": "test_user_123", // ID utilisateur de test standardisé
           "request_type": "text_query",
           "content": {
             "text": `Je viens de scanner ${product.name}, que peux-tu me suggérer ?`,
@@ -36,7 +37,7 @@ const ScannerPage = () => {
               "location": "scanner_page",
               "scanned_products": [
                 {
-                  "id": product.id,
+                  "id": `scan_${Date.now()}`, // ID unique pour le scan
                   "name": product.name,
                   "category": product.category || "Non catégorisé"
                 }
@@ -50,9 +51,12 @@ const ScannerPage = () => {
         const data = await response.json();
         setSuggestions(data.recommendations || "Aucune suggestion disponible pour le moment.");
         toast.success("Recommandations mises à jour");
+      } else {
+        toast.error(`Erreur API: ${response.status}`);
       }
     } catch (error) {
       console.error("Erreur lors de la récupération des recommandations:", error);
+      toast.error("Impossible de contacter le serveur de recommandations");
     }
   };
 
