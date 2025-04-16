@@ -20,7 +20,7 @@ const ScannerPage = () => {
     setIsScanning(true);
   };
 
-  // Nouvelle fonction pour envoyer les données de code-barres à l'API n8n
+  // Fonction pour envoyer les données de code-barres à l'API n8n
   const sendBarcodeData = async (barcode, productName = "Produit inconnu") => {
     const payload = {
       user_id: "test_user_123",
@@ -64,6 +64,14 @@ const ScannerPage = () => {
   };
 
   const handleDetected = async (barcode: string) => {
+    // Validation du code-barres : 13 chiffres numériques
+    if (!/^\d{13}$/.test(barcode)) {
+      // Ne pas afficher d'erreur, juste continuer le scan
+      setIsScanning(true);
+      return;
+    }
+    
+    // Si le code est valide, arrêter le scan et traiter le résultat
     setIsScanning(false);
     setIsLoading(true);
     
@@ -88,10 +96,14 @@ const ScannerPage = () => {
         }
       } else {
         toast.error("Produit non trouvé");
+        // Reprendre le scan si le produit n'est pas trouvé
+        setIsScanning(true);
       }
     } catch (error) {
       console.error("Erreur lors de la récupération du produit:", error);
       toast.error("Erreur lors du scan");
+      // Reprendre le scan en cas d'erreur
+      setIsScanning(true);
     } finally {
       setIsLoading(false);
     }

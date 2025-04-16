@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { Button } from '@/components/ui/button';
@@ -50,13 +49,11 @@ const FridgePage = () => {
     }
   }, [isFirstTime]);
   
-  // Fonction pour formater une date d'expiration
   const formatExpiryDate = (date?: Date) => {
     if (!date) return 'Pas de date';
     return new Date(date).toLocaleDateString();
   };
   
-  // Fonction pour déterminer si un produit est sur le point d'expirer (dans les 2 jours)
   const isAboutToExpire = (date?: Date) => {
     if (!date) return false;
     const today = new Date();
@@ -96,21 +93,16 @@ const FridgePage = () => {
     if (videoRef.current && canvasRef.current) {
       const context = canvasRef.current.getContext('2d');
       if (context) {
-        // Définir la taille du canvas à celle du flux vidéo
         canvasRef.current.width = videoRef.current.videoWidth;
         canvasRef.current.height = videoRef.current.videoHeight;
         
-        // Dessiner l'image vidéo sur le canvas
         context.drawImage(videoRef.current, 0, 0, canvasRef.current.width, canvasRef.current.height);
         
-        // Convertir l'image en base64
         const imageData = canvasRef.current.toDataURL('image/jpeg');
         setCapturedImage(imageData);
         
-        // Ouvrir la prévisualisation
         setIsPreviewOpen(true);
         
-        // Arrêter la caméra
         stopCamera();
       }
     }
@@ -119,7 +111,6 @@ const FridgePage = () => {
   const sendFridgeImage = async (imageBase64: string) => {
     setIsProcessing(true);
     
-    // Extraire uniquement la partie base64 sans le préfixe "data:image/jpeg;base64,"
     const base64Data = imageBase64.split(',')[1];
     
     const payload = {
@@ -145,7 +136,6 @@ const FridgePage = () => {
       if (response.ok) {
         const data = await response.json();
         
-        // Ajouter les produits détectés au frigo
         if (data.detected_products && Array.isArray(data.detected_products)) {
           data.detected_products.forEach((product: any) => {
             const fridgeProduct: Product = {
@@ -160,21 +150,17 @@ const FridgePage = () => {
           
           toast.success(`${data.detected_products.length} produits ajoutés à votre frigo`);
         } else {
-          // Simuler des produits détectés pour les tests
           simulateDetectedProducts();
         }
         
-        // Marquer comme non-première utilisation
         setIsFirstTime(false);
       } else {
         toast.error(`Erreur API: ${response.status}`);
-        // Simuler des produits détectés pour les tests
         simulateDetectedProducts();
       }
     } catch (error) {
       console.error("Erreur lors de l'envoi de l'image:", error);
       toast.error("Impossible de contacter le serveur");
-      // Simuler des produits détectés pour les tests
       simulateDetectedProducts();
     } finally {
       setIsProcessing(false);
@@ -183,23 +169,19 @@ const FridgePage = () => {
     }
   };
   
-  // Fonction pour simuler des produits détectés (pour les tests)
   const simulateDetectedProducts = () => {
-    // Produits fictifs qui seraient normalement retournés par l'API
     const detectedProducts = [
       { id: `p${Date.now()}-1`, name: 'Lait', brand: 'Lactel', category: 'Produits laitiers', price: 1.15 },
       { id: `p${Date.now()}-2`, name: 'Œufs', brand: 'Fermiers', category: 'Produits frais', price: 2.50 },
       { id: `p${Date.now()}-3`, name: 'Tomates', brand: 'Local', category: 'Légumes', price: 1.80 }
     ];
     
-    // Ajouter les produits au frigo
     detectedProducts.forEach(product => {
       addToFridge(product);
     });
     
     toast.success(`${detectedProducts.length} produits ajoutés à votre frigo`);
     
-    // Marquer comme non-première utilisation
     setIsFirstTime(false);
   };
   
@@ -253,7 +235,6 @@ const FridgePage = () => {
       return;
     }
     
-    // Créer un nouvel objet produit
     const product: Product = {
       id: `manual-${Date.now()}`,
       name: newProduct.name,
@@ -261,17 +242,14 @@ const FridgePage = () => {
       price: 0
     };
     
-    // Ajouter au frigo
     const expiryDate = newProduct.expiryDate ? new Date(newProduct.expiryDate) : undefined;
     addToFridge(product, newProduct.quantity, expiryDate);
     
     toast.success(`${newProduct.name} ajouté à votre frigo`);
     
-    // Réinitialiser le formulaire et fermer la modal
     setNewProduct({ name: '', quantity: 1, expiryDate: undefined });
     setIsAddProductOpen(false);
     
-    // Marquer comme non-première utilisation
     setIsFirstTime(false);
   };
   
@@ -287,7 +265,6 @@ const FridgePage = () => {
         <>
           <p className="text-sm text-gray-600 mb-6">{totalItems} produit{totalItems > 1 ? 's' : ''} dans votre frigo</p>
           
-          {/* Zone de capture/upload */}
           <div 
             className="mb-6 border-2 border-dashed border-gray-300 rounded-lg p-4 flex flex-col items-center justify-center cursor-pointer hover:border-primary transition-colors"
             onClick={() => !isCapturing && fileInputRef.current?.click()}
@@ -340,7 +317,6 @@ const FridgePage = () => {
           </div>
           <canvas ref={canvasRef} className="hidden"></canvas>
           
-          {/* Liste des produits */}
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mb-6">
             {fridgeItems.map(item => (
               <Card key={item.product.id} className={`overflow-hidden hover:shadow-md transition-shadow`}>
@@ -383,7 +359,6 @@ const FridgePage = () => {
             ))}
           </div>
           
-          {/* Boutons d'action */}
           <div className="flex flex-col gap-3">
             <Button variant="outline" onClick={handleAddManualProduct} className="flex items-center">
               <PlusCircle size={18} className="mr-2" /> Ajouter manuellement
@@ -406,9 +381,19 @@ const FridgePage = () => {
                 <Button onClick={startCamera} className="flex items-center justify-center">
                   <Camera size={18} className="mr-2" /> Prendre une photo
                 </Button>
+                <Button variant="outline" onClick={() => fileInputRef.current?.click()} className="flex items-center justify-center">
+                  <Upload size={18} className="mr-2" /> Importer une image
+                </Button>
                 <Button variant="outline" onClick={handleAddManualProduct} className="flex items-center justify-center">
                   <PlusCircle size={18} className="mr-2" /> Ajouter manuellement
                 </Button>
+                <input 
+                  type="file"
+                  ref={fileInputRef}
+                  className="hidden"
+                  accept="image/*"
+                  onChange={handleFileInput}
+                />
               </div>
             </>
           ) : (
@@ -421,16 +406,25 @@ const FridgePage = () => {
                 <Button onClick={startCamera} className="flex items-center justify-center">
                   <Camera size={18} className="mr-2" /> Prendre une photo
                 </Button>
+                <Button variant="outline" onClick={() => fileInputRef.current?.click()} className="flex items-center justify-center">
+                  <Upload size={18} className="mr-2" /> Importer une image
+                </Button>
                 <Button variant="outline" onClick={handleAddManualProduct} className="flex items-center justify-center">
                   <PlusCircle size={18} className="mr-2" /> Ajouter manuellement
                 </Button>
+                <input 
+                  type="file"
+                  ref={fileInputRef}
+                  className="hidden"
+                  accept="image/*"
+                  onChange={handleFileInput}
+                />
               </div>
             </>
           )}
         </div>
       )}
 
-      {/* Modal d'ajout manuel de produit */}
       <Dialog open={isAddProductOpen} onOpenChange={setIsAddProductOpen}>
         <DialogContent>
           <DialogHeader>
@@ -500,7 +494,6 @@ const FridgePage = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Nouvelle modal pour prévisualiser l'image capturée */}
       <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>

@@ -12,6 +12,8 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onDetected, isScanning 
   const videoRef = useRef<HTMLDivElement>(null);
   const [scanningLine, setScanningLine] = useState<number>(25);
   const scannerHeight = 300; // hauteur fixe du scanner
+  const [lastBarcode, setLastBarcode] = useState<string | null>(null);
+  const [lastTimestamp, setLastTimestamp] = useState<number>(0);
 
   // Animation de la ligne de scan
   useEffect(() => {
@@ -72,12 +74,26 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onDetected, isScanning 
       
       // Configuration de la détection de code-barres
       Quagga.onDetected((data: ScanResult) => {
-        // Arrêter Quagga après la détection
-        Quagga.stop();
-        
-        // Appeler le callback avec le code-barres détecté
         if (data && data.codeResult) {
-          onDetected(data.codeResult.code);
+          const code = data.codeResult.code;
+          const currentTime = Date.now();
+          
+          // Vérifier si le code est un code à 13 chiffres
+          const isValid = /^\d{13}$/.test(code);
+          
+          // Éviter les détections multiples du même code-barres en moins d'une seconde
+          if (code !== lastBarcode || currentTime - lastTimestamp > 1000) {
+            setLastBarcode(code);
+            setLastTimestamp(currentTime);
+            
+            // Si le code est valide, on l'envoie au composant parent
+            if (isValid) {
+              // Arrêter Quagga après la détection d'un code valide
+              Quagga.stop();
+              onDetected(code);
+            }
+            // Si le code n'est pas valide, on continue le scan sans afficher d'erreur
+          }
         }
       });
     });
@@ -86,7 +102,7 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onDetected, isScanning 
     return () => {
       Quagga.stop();
     };
-  }, [isScanning, onDetected]);
+  }, [isScanning, onDetected, lastBarcode, lastTimestamp]);
 
   return (
     <div className="w-full relative overflow-hidden">
