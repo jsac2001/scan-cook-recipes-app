@@ -28,20 +28,6 @@ const RecipeCard: React.FC<RecipeCardProps> = ({ recipe, onShowDetails }) => {
     navigate(`/recipe/${recipe.id}`);
   };
   
-  // Fonction pour formater la difficulté
-  const formatDifficulty = (difficulty: string) => {
-    const mapping: Record<string, string> = {
-      'facile': 'facile',
-      'moyen': 'moyen',
-      'difficile': 'difficile',
-      'easy': 'facile',
-      'medium': 'moyen',
-      'hard': 'difficile',
-    };
-    
-    return mapping[difficulty.toLowerCase()] || difficulty;
-  };
-  
   return (
     <Card className="overflow-hidden mb-4 transition-all duration-200 hover:shadow-md animate-fade-in">
       <div className="flex flex-col md:flex-row">
@@ -67,7 +53,7 @@ const RecipeCard: React.FC<RecipeCardProps> = ({ recipe, onShowDetails }) => {
               {recipe.difficulty && (
                 <div className="flex items-center">
                   <ChefHat size={16} className="mr-1" />
-                  {formatDifficulty(recipe.difficulty)}
+                  {recipe.difficulty}
                 </div>
               )}
             </div>
@@ -91,10 +77,9 @@ const RecipeCard: React.FC<RecipeCardProps> = ({ recipe, onShowDetails }) => {
                   <span 
                     key={tag} 
                     className={`text-xs px-2 py-0.5 rounded-full ${
-                      tag === 'budget' || tag === 'économique' ? 'bg-blue-100 text-blue-800' : 
-                      tag === 'santé' || tag === 'végétarien' || tag === 'végétalien' ? 'bg-green-100 text-green-800' : 
-                      tag === 'omnivore' ? 'bg-amber-100 text-amber-800' :
-                      'bg-gray-100 text-gray-800'
+                      tag === 'budget' ? 'bg-blue-100 text-blue-800' : 
+                      tag === 'santé' ? 'bg-green-100 text-green-800' : 
+                      'bg-amber-100 text-amber-800'
                     }`}
                   >
                     {tag}
