@@ -11,6 +11,7 @@ import SuggestionsPage from "./pages/SuggestionsPage";
 import RecipeDetailPage from "./pages/RecipeDetailPage";
 import CartPage from "./pages/CartPage";
 import FridgePage from "./pages/FridgePage";
+import StyleGuidePage from "./pages/StyleGuidePage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +31,7 @@ const App = () => (
               <Route path="/recipe/:id" element={<RecipeDetailPage />} />
               <Route path="/cart" element={<CartPage />} />
               <Route path="/fridge" element={<FridgePage />} />
+              <Route path="/style-guide" element={<StyleGuidePage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
             <Navigation />

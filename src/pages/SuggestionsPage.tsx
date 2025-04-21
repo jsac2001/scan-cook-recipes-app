@@ -47,7 +47,7 @@ const SuggestionsPage: React.FC = () => {
       <div className="mb-4">
         <h1 className="text-2xl font-bold">Suggestions de recettes</h1>
         
-        <p className="text-sm text-gray-600 mt-1">
+        <p className="text-sm text-muted mt-1">
           Basées sur {scannedProducts.length} produit{scannedProducts.length > 1 ? 's' : ''} scanné{scannedProducts.length > 1 ? 's' : ''} et {fridgeItems.length} produit{fridgeItems.length > 1 ? 's' : ''} dans votre frigo
         </p>
       </div>
@@ -60,7 +60,7 @@ const SuggestionsPage: React.FC = () => {
       {isLoading ? (
         <div className="flex flex-col items-center justify-center py-12">
           <Loader size={32} className="text-primary animate-spin mb-4" />
-          <p className="text-gray-500">Recherche des meilleures recettes...</p>
+          <p className="text-muted">Recherche des meilleures recettes...</p>
         </div>
       ) : (
         <ScrollArea className="h-[calc(100vh-230px)] pr-4">
@@ -74,9 +74,9 @@ const SuggestionsPage: React.FC = () => {
             ))
           ) : (
             <div className="text-center py-12">
-              <p className="text-gray-500 mb-2">Aucune recette ne correspond à vos critères</p>
+              <p className="text-muted mb-2">Aucune recette ne correspond à vos critères</p>
               {selectedFilters.length > 0 && (
-                <p className="text-sm text-gray-400">
+                <p className="text-sm text-muted/80">
                   Essayez de modifier vos filtres ou de scanner d'autres produits
                 </p>
               )}
