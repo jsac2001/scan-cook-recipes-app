@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
@@ -22,7 +21,7 @@ import { Badge } from '@/components/ui/badge';
 const RecipeDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { addRecipeToCart } = useAppContext();
+  const { addRecipeToCart, addToCart } = useAppContext();
   
   const [recipe, setRecipe] = useState<Recipe | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -75,6 +74,11 @@ const RecipeDetailPage: React.FC = () => {
     
     setAdjustedIngredients(adjusted);
   }, [recipe, servings]);
+
+  const handleAddIngredientToCart = (ingredient: Product) => {
+    addToCart(ingredient, 1);
+    toast.success(`${ingredient.name} ajouté au panier`);
+  };
 
   const handleAddToCart = () => {
     if (!recipe) return;
@@ -218,14 +222,27 @@ const RecipeDetailPage: React.FC = () => {
                 <CardContent className="p-4">
                   <div className="space-y-3">
                     {adjustedIngredients.map((ingredient, index) => (
-                      <div key={ingredient.id} className="flex justify-between items-center">
-                        <span className="text-gray-800">{ingredient.name}</span>
-                        <span className="text-primary font-medium">
-                          {ingredient.price?.toLocaleString('fr-FR', {
-                            style: 'currency',
-                            currency: 'EUR'
-                          })}
-                        </span>
+                      <div key={ingredient.id}>
+                        <div className="flex items-center justify-between gap-4">
+                          <div className="flex items-center gap-4 flex-1">
+                            <span className="text-gray-800">{ingredient.name}</span>
+                            <div className="flex-1 border-b border-dashed border-gray-300"></div>
+                            <span className="text-primary font-medium">
+                              {ingredient.price?.toLocaleString('fr-FR', {
+                                style: 'currency',
+                                currency: 'EUR'
+                              })}
+                            </span>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleAddIngredientToCart(ingredient)}
+                            className="ml-2"
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                        </div>
                         {index < adjustedIngredients.length - 1 && <Separator className="my-2" />}
                       </div>
                     ))}
