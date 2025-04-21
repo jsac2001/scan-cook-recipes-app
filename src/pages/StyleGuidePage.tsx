@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,16 +9,16 @@ import { RadioGroup } from '@/components/ui/radio-group';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Scan, ShoppingCart, Book, Fridge } from 'lucide-react';
+import { Scan, ShoppingCart, Book, Refrigerator } from 'lucide-react';
 
-const ColorPalette: React.FC<{ name: string; color: string; textColor?: string }> = ({ 
-  name, 
-  color, 
-  textColor = 'text-white' 
+const ColorPalette: React.FC<{ name: string; color: string; textColor?: string }> = ({
+  name,
+  color,
+  textColor = 'text-white'
 }) => (
   <div className="flex flex-col">
-    <div 
-      className={`w-full h-16 rounded-md mb-1 ${textColor} flex items-center justify-center font-medium`} 
+    <div
+      className={`w-full h-16 rounded-md mb-1 ${textColor} flex items-center justify-center font-medium`}
       style={{ backgroundColor: color }}
     >
       {name}
@@ -46,7 +45,6 @@ const StyleGuidePage: React.FC = () => {
             <TabsTrigger value="animations">Animations</TabsTrigger>
           </TabsList>
 
-          {/* Section des couleurs */}
           <TabsContent value="colors">
             <Card>
               <CardHeader>
@@ -117,7 +115,6 @@ const StyleGuidePage: React.FC = () => {
             </Card>
           </TabsContent>
 
-          {/* Section typographie */}
           <TabsContent value="typography">
             <Card>
               <CardHeader>
@@ -192,7 +189,6 @@ const StyleGuidePage: React.FC = () => {
             </Card>
           </TabsContent>
 
-          {/* Section composants UI */}
           <TabsContent value="components">
             <Card>
               <CardHeader>
@@ -304,7 +300,6 @@ const StyleGuidePage: React.FC = () => {
             </Card>
           </TabsContent>
 
-          {/* Section Icônes */}
           <TabsContent value="icons">
             <Card>
               <CardHeader>
@@ -327,9 +322,9 @@ const StyleGuidePage: React.FC = () => {
                     </div>
                     <div className="flex flex-col items-center">
                       <div className="bg-neutral-100 w-16 h-16 rounded-full flex items-center justify-center mb-2">
-                        <Fridge className="h-8 w-8 text-secondary" />
+                        <Refrigerator className="h-8 w-8 text-secondary" />
                       </div>
-                      <span className="text-sm">Frigo</span>
+                      <span className="text-sm">Réfrigérateur</span>
                     </div>
                     <div className="flex flex-col items-center">
                       <div className="bg-neutral-100 w-16 h-16 rounded-full flex items-center justify-center mb-2">
@@ -375,7 +370,6 @@ const StyleGuidePage: React.FC = () => {
             </Card>
           </TabsContent>
 
-          {/* Section Animations */}
           <TabsContent value="animations">
             <Card>
               <CardHeader>
